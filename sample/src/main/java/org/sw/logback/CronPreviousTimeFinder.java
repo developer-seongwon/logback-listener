@@ -13,12 +13,12 @@ public class CronPreviousTimeFinder {
     private final int[] months;
     private final int[] daysOfWeek;
     
-    public CronPreviousTimeFinder(String cronExpression) throws ParseException {
+    public CronPreviousTimeFinder(String cronExpression){
         this.cronExpression = cronExpression;
         String[] fields = cronExpression.trim().split("\\s+");
         
         if (fields.length < 6 || fields.length > 7) {
-            throw new ParseException("Invalid cron expression", 0);
+            throw new IllegalArgumentException("Invalid cron expression");
         }
         
         this.seconds = parseField(fields[0], 0, 59);
@@ -143,7 +143,7 @@ public class CronPreviousTimeFinder {
     /**
      * Cron 필드를 파싱하여 유효한 값들의 배열을 반환합니다.
      */
-    private int[] parseField(String field, int min, int max) throws ParseException {
+    private int[] parseField(String field, int min, int max){
         if ("*".equals(field) || "?".equals(field)) {
             return generateRange(min, max);
         }
@@ -173,7 +173,7 @@ public class CronPreviousTimeFinder {
         return values.stream().mapToInt(Integer::intValue).toArray();
     }
     
-    private void parseStepValue(String stepExpr, int min, int max, Set<Integer> values) throws ParseException {
+    private void parseStepValue(String stepExpr, int min, int max, Set<Integer> values){
         String[] stepParts = stepExpr.split("/");
         String rangeExpr = stepParts[0];
         int step = Integer.parseInt(stepParts[1]);
@@ -198,7 +198,7 @@ public class CronPreviousTimeFinder {
         }
     }
     
-    private void parseRange(String rangeExpr, int min, int max, Set<Integer> values) throws ParseException {
+    private void parseRange(String rangeExpr, int min, int max, Set<Integer> values){
         String[] rangeParts = rangeExpr.split("-");
         int start = parseValue(rangeParts[0], min, max);
         int end = parseValue(rangeParts[1], min, max);
@@ -210,7 +210,7 @@ public class CronPreviousTimeFinder {
         }
     }
     
-    private int parseValue(String value, int min, int max) throws ParseException {
+    private int parseValue(String value, int min, int max){
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
@@ -223,7 +223,7 @@ public class CronPreviousTimeFinder {
                 case "THU": return 5;
                 case "FRI": return 6;
                 case "SAT": return 7;
-                default: throw new ParseException("Invalid value: " + value, 0);
+                default: throw new IllegalArgumentException("Invalid value: " + value);
             }
         }
     }

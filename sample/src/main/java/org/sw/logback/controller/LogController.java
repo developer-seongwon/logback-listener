@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class LogController {
 
     private static final Logger logger = LoggerFactory.getLogger(LogController.class);
-    private static final Logger olg = LoggerFactory.getLogger("com.example.dynamic");
 
     @GetMapping("/test")
     public String testLogging() {
@@ -21,11 +20,11 @@ public class LogController {
         logger.warn("WARN 레벨 로그입니다.");
         logger.error("ERROR 레벨 로그입니다.");
 
-        olg.trace("TRACE 레벨 로그입니다.");
-        olg.debug("DEBUG 레벨 로그입니다.");
-        olg.info("INFO 레벨 로그입니다.");
-        olg.warn("WARN 레벨 로그입니다.");
-        olg.error("ERROR 레벨 로그입니다.");
+//        olg.trace("TRACE 레벨 로그입니다.");
+//        olg.debug("DEBUG 레벨 로그입니다.");
+//        olg.info("INFO 레벨 로그입니다.");
+//        olg.warn("WARN 레벨 로그입니다.");
+//        olg.error("ERROR 레벨 로그입니다.");
 
         return "로깅 테스트 완료! 로그 파일을 확인해보세요.";
     }
