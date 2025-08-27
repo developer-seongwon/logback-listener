@@ -27,37 +27,37 @@ public class LogContextListener implements LoggerContextListener {
         System.out.println("LogContextListener.onStart()");
 
 
-        // 1. RollingFileAppender 생성 및 설정
-        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
-        fileAppender.setContext(context);
-        fileAppender.setName("DYNAMIC_FILE");
-        fileAppender.setFile("logs/dynamic/application.log");
-
-        // 2. PatternLayoutEncoder 설정
-        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-        encoder.setContext(context);
-        encoder.setPattern("%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n");
-        encoder.start();
-
-        fileAppender.setEncoder(encoder);
-
-        // 3. RollingPolicy 설정
-        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
-        rollingPolicy.setContext(context);
-        rollingPolicy.setParent(fileAppender);
-        rollingPolicy.setFileNamePattern("logs/dynamic/application.%d{yyyy-MM-dd}.log");
-        rollingPolicy.setMaxHistory(7);  // 7일간 보관
-        rollingPolicy.start();
-        fileAppender.setRollingPolicy(rollingPolicy);
-
-        // 4. Appender 시작
-        fileAppender.start();
-
-        // 5. 특정 패키지용 Logger 생성 및 설정
-        Logger customLogger = context.getLogger("com.example.dynamic");
-        customLogger.setLevel(Level.DEBUG);
-        customLogger.addAppender(fileAppender);
-        customLogger.setAdditive(false);  // 루트 로거로 전파하지 않음
+//        // 1. RollingFileAppender 생성 및 설정
+//        RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();
+//        fileAppender.setContext(context);
+//        fileAppender.setName("DYNAMIC_FILE");
+//        fileAppender.setFile("logs/dynamic/application.log");
+//
+//        // 2. PatternLayoutEncoder 설정
+//        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+//        encoder.setContext(context);
+//        encoder.setPattern("%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n");
+//        encoder.start();
+//
+//        fileAppender.setEncoder(encoder);
+//
+//        // 3. RollingPolicy 설정
+//        TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+//        rollingPolicy.setContext(context);
+//        rollingPolicy.setParent(fileAppender);
+//        rollingPolicy.setFileNamePattern("logs/dynamic/application.%d{yyyy-MM-dd}.log");
+//        rollingPolicy.setMaxHistory(7);  // 7일간 보관
+//        rollingPolicy.start();
+//        fileAppender.setRollingPolicy(rollingPolicy);
+//
+//        // 4. Appender 시작
+//        fileAppender.start();
+//
+//        // 5. 특정 패키지용 Logger 생성 및 설정
+//        Logger customLogger = context.getLogger("com.example.dynamic");
+//        customLogger.setLevel(Level.DEBUG);
+//        customLogger.addAppender(fileAppender);
+//        customLogger.setAdditive(false);  // 루트 로거로 전파하지 않음
 
 //        addInfo("동적 로거 생성 완료: com.example.dynamic");
 //        addInfo("ERROR 전용 로거 생성 완료: com.example.errors");
