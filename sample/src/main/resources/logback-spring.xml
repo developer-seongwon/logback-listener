@@ -13,6 +13,7 @@
 
     <!-- 파일 출력용 appender -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>asd</file>
         <rollingPolicy class="org.sw.logback.CronRollingPolicy">
             <fileNamePattern>./logs/application.%d{yyyy-MM-dd}.log</fileNamePattern>
             <cron>0 * * * * *</cron>
