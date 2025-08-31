@@ -1,77 +1,91 @@
 package org.sw.logback;
 
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.joran.GenericXMLConfigurator;
-import ch.qos.logback.core.rolling.LengthCounter;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.RolloverFailure;
-import ch.qos.logback.core.rolling.TriggeringPolicy;
-import ch.qos.logback.core.rolling.helper.Compressor;
-import ch.qos.logback.core.rolling.helper.FileNamePattern;
-import org.springframework.scheduling.support.CronExpression;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+
+import org.quartz.CronExpression;
 
 import java.io.File;
-import java.time.LocalDateTime;
+import java.text.ParseException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.Optional;
 
-public class CronRollingPolicy<E> extends RollingPolicyBase implements TriggeringPolicy<E> {
-
-    private CronExpression cron = CronExpression.parse("0 0 0 * * *");
-    private Compressor compressor;
-    FileNamePattern fileNamePattern;
+public class CronBasedRollingPolicy<E> extends TimeBasedRollingPolicy<E> {
+    protected String cronExpressionStr = "0 0 0 * * ?";
+    protected CronExpression cronExpression;
+    protected Date previousDate;
+    protected Date nextDate;
+    protected DefaultCronBasedFileNamingAndTriggeringPolicy<E> fileNamingTriggeringPolicy;
+    protected CronRoller roller;
 
     @Override
     public void start() {
-        System.out.println("CronRollingPolicy.start()");
+        this.fileNamingTriggeringPolicy = new DefaultCronBasedFileNamingAndTriggeringPolicy<>();
+        // using a wrapper object
+        setTimeBasedFileNamingAndTriggeringPolicy(this.fileNamingTriggeringPolicy);
 
-        Date now = new Date();
-        Date previous = CronUtil.previous(this.cron.toString(), now);
-        LocalDateTime next = cron.next(now.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
-        System.out.println("날짜 확인: " + previous.toString() + " -> " + now + " -> " + next.toString());
-
-        System.out.println("파일 확인:" + getFileNamePattern());
-        this.fileNamePattern = new FileNamePattern(getFileNamePattern(), getContext());
-
-//        this.fileNamePattern = new FileNamePattern(getFileNamePattern(), getContext());
-//        this.fileNamePattern.convertMultipleArguments(now, new)
-//        for(StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()){
-//            System.out.println(stackTraceElement.getClassName() + "." + stackTraceElement.getMethodName() + "(" + stackTraceElement.getLineNumber() + ")");
-//        }
-//
-//        GenericXMLConfigurator a;
+        try {
+            this.cronExpression = new CronExpression(this.cronExpressionStr);
+        } catch (ParseException cause) {
+            addError("Invalid Cron Expression: " + cause);
+            return;
+        }
+        Date now = new Date(this.fileNamingTriggeringPolicy.getCurrentTime());
+        this.previousDate = CronUtil.previous(this.cronExpressionStr, now);
+        this.nextDate = this.cronExpression.getNextValidTimeAfter(now);
 
         super.start();
-    }
-
-    @Override
-    public LengthCounter getLengthCounter() {
-        return TriggeringPolicy.super.getLengthCounter();
+        // 파일 이름이 기존 로거의 규칙에 맞게 생성되도록 이전 스케줄 시간을 강제로 주입합니다.
+        this.fileNamingTriggeringPolicy.setDateInCurrentPeriod(this.previousDate.getTime());
     }
 
     @Override
     public boolean isTriggeringEvent(File activeFile, E event) {
-        System.out.println("CronRollingPolicy.isTriggeringEvent()");
-        return false;
+        long now = getTimeBasedFileNamingAndTriggeringPolicy().getCurrentTime();
+        if (now > this.nextDate.getTime()) {
+            // 스케줄 간격을 2번이상 넘어가는 경우가 있으므로 그만큼 스케줄 시간을 조정합니다.
+            do {
+                this.previousDate = this.nextDate;
+                this.nextDate = this.cronExpression.getNextValidTimeAfter(this.nextDate);
+            } while (this.nextDate.getTime() < now);
+            // 현재는 cron의 간격이 무조건 time보다 넓기 때문에 항상 true가 반환
+            boolean result = super.isTriggeringEvent(activeFile, event);
+            // isTriggeringEvent가 호출된 이후에는 호출된 시간을 기준으로 파일명을 생성하는 객체가 변경되기때문에 cron 스케줄 시간을 강제로 주입합니다.
+            this.fileNamingTriggeringPolicy.setDateInCurrentPeriod(this.previousDate.getTime());
+            return result;
+        } else {
+            return false;
+        }
     }
 
     @Override
     public void rollover() throws RolloverFailure {
-        System.out.println("CronRollingPolicy.rollover()");
+        super.rollover();
     }
 
     @Override
     public String getActiveFileName() {
-        return Optional.ofNullable(getParentsRawFileProperty()).orElseGet(() ->
-                "asd"
-        );
+        String activeFileName = super.getActiveFileName();
+        System.out.println("CronRollingPolicy.getActiveFileName(): " + activeFileName);
+        return activeFileName;
+//        return Optional.ofNullable(getParentsRawFileProperty()).orElseGet(() ->
+//                "asd"
+//        );
 
 //        if (parentsRawFileProperty != null) {
 //            return parentsRawFileProperty;
 //        } else {
 //            return timeBasedFileNamingAndTriggeringPolicy.getCurrentPeriodsFileNameWithoutCompressionSuffix();
 //        }
+    }
+
+    @Override
+    public TimeBasedFileNamingAndTriggeringPolicy<E> getTimeBasedFileNamingAndTriggeringPolicy() {
+        return super.getTimeBasedFileNamingAndTriggeringPolicy();
     }
 
     /**
@@ -95,9 +109,9 @@ public class CronRollingPolicy<E> extends RollingPolicyBase implements Triggerin
      */
     public void setCron(String cron) {
         if (CronExpression.isValidExpression(cron)) {
-            this.cron = CronExpression.parse(cron);
+            this.cronExpressionStr = cron;
         } else {
-            addError("Invalid Cron Expression: " + cron);
+
         }
     }
 
@@ -172,4 +186,11 @@ public class CronRollingPolicy<E> extends RollingPolicyBase implements Triggerin
     public String getParentsRawFileProperty() {
         return super.getParentsRawFileProperty();
     }
+
+
+    @Override
+    public String toString() {
+        return "o.s.l.CronBasedRollingPolicy";
+    }
 }
+
