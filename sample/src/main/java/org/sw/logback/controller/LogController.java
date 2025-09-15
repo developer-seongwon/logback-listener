@@ -14,11 +14,11 @@ public class LogController {
 
     @GetMapping("/test")
     public String testLogging() {
-        logger.trace("TRACE 레벨 로그입니다.");
-        logger.debug("DEBUG 레벨 로그입니다.");
+//        logger.trace("TRACE 레벨 로그입니다.");
+//        logger.debug("DEBUG 레벨 로그입니다.");
         logger.info("INFO 레벨 로그입니다.");
-        logger.warn("WARN 레벨 로그입니다.");
-        logger.error("ERROR 레벨 로그입니다.");
+//        logger.warn("WARN 레벨 로그입니다.");
+//        logger.error("ERROR 레벨 로그입니다.");
 
 //        olg.trace("TRACE 레벨 로그입니다.");
 //        olg.debug("DEBUG 레벨 로그입니다.");

@@ -1,26 +1,38 @@
 package org.sw.logback;
 
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.rolling.RollingPolicyBase;
-import ch.qos.logback.core.rolling.RolloverFailure;
-import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.rolling.*;
 
+import ch.qos.logback.core.rolling.helper.Compressor;
+import ch.qos.logback.core.rolling.helper.FileNamePattern;
 import org.quartz.CronExpression;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class CronBasedRollingPolicy<E> extends TimeBasedRollingPolicy<E> {
+public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> {
+    private ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
     protected String cronExpressionStr = "0 0 0 * * ?";
     protected CronExpression cronExpression;
     protected Date previousDate;
     protected Date nextDate;
     protected DefaultCronBasedFileNamingAndTriggeringPolicy<E> fileNamingTriggeringPolicy;
     protected CronRoller roller;
+
+    private String previousFileName;
 
     @Override
     public void start() {
@@ -41,10 +53,49 @@ public class CronBasedRollingPolicy<E> extends TimeBasedRollingPolicy<E> {
         super.start();
         // 파일 이름이 기존 로거의 규칙에 맞게 생성되도록 이전 스케줄 시간을 강제로 주입합니다.
         this.fileNamingTriggeringPolicy.setDateInCurrentPeriod(this.previousDate.getTime());
+
+        this.service.scheduleAtFixedRate(() -> {
+            if (getTimeBasedFileNamingAndTriggeringPolicy().isTriggeringEvent(null, null)) {
+                createFileIfNotExists(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
+            }
+//            이전이름 == getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix();
+//            try {
+//                isTriggeringEvent(null, null))
+//
+//            }catch(Exception cause){
+//                cause.printStackTrace();
+//            }
+//            다음이름
+//
+//                    if(이전이름.equals(다음이름)){
+//                        // ds
+//                    }
+//
+//
+//            FileNamePattern pattern = new FileNamePattern(fileNamePatternStr, this.context);
+//            List<String> logs = new ArrayList<>();
+//            logs.add("CronBasedRollingPolicy.start: ");
+//            logs.add(getString(getFileNamePattern()));
+//            logs.add(getString(getActiveFileName()));
+//            logs.add(getString(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix()));
+////            logs.add(getString(getTimeBasedFileNamingAndTriggeringPolicy().getElapsedPeriodsFileName()));
+//            logs.add(getString(getFileNamePattern()));
+//
+//                System.out.println(String.join(", ", logs.toArray(new String[0])));
+
+        }, 0, 5, TimeUnit.SECONDS);
+//        System.out.println(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
+//
+//        if(this.previousFileName == null){
+//            this.previousFileName = getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix();
+//        }else{
+//
+//        }
     }
 
     @Override
     public boolean isTriggeringEvent(File activeFile, E event) {
+//        System.out.println("CronBasedRollingPolicy.isTriggeringEvent: " + activeFile.getName());
         long now = getTimeBasedFileNamingAndTriggeringPolicy().getCurrentTime();
         if (now > this.nextDate.getTime()) {
             // 스케줄 간격을 2번이상 넘어가는 경우가 있으므로 그만큼 스케줄 시간을 조정합니다.
@@ -191,6 +242,36 @@ public class CronBasedRollingPolicy<E> extends TimeBasedRollingPolicy<E> {
     @Override
     public String toString() {
         return "o.s.l.CronBasedRollingPolicy";
+    }
+
+    public String getString(Object obj) {
+        try {
+            return String.valueOf(obj);
+        } catch (Exception cause) {
+            return cause.toString();
+        }
+    }
+
+    public Path createFileIfNotExists(String filePathStr) {
+        try {
+            Path path = Paths.get(filePathStr);
+
+            // 1. 상위 디렉토리 생성 (null 체크 포함)
+            Path parentDir = path.getParent();
+            if (parentDir != null) {
+                Files.createDirectories(parentDir); // 디렉토리 없으면 생성, 있으면 무시
+            }
+
+            // 2. 파일 생성 (없으면 생성, 있으면 무시)
+            if (!Files.exists(path)) {
+                Files.createFile(path);
+            }
+
+            return path;
+
+        } catch (IOException e) {
+            throw new RuntimeException("파일 생성 실패: ", e);
+        }
     }
 }
 
