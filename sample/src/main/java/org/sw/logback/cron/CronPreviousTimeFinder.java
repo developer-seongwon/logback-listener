@@ -4,17 +4,17 @@ import java.util.*;
 
 public class CronPreviousTimeFinder {
     
-    private final String cronExpression;
+    private final String cron;
     private final int[] seconds;
-    private final int[] minutes; 
+    private final int[] minutes;
     private final int[] hours;
     private final int[] daysOfMonth;
     private final int[] months;
     private final int[] daysOfWeek;
     
-    public CronPreviousTimeFinder(String cronExpression){
-        this.cronExpression = cronExpression;
-        String[] fields = cronExpression.trim().split("\\s+");
+    public CronPreviousTimeFinder(String cron){
+        this.cron = cron;
+        String[] fields = cron.trim().split("\\s+");
         
         if (fields.length < 6 || fields.length > 7) {
             throw new IllegalArgumentException("Invalid cron expression");
@@ -31,9 +31,9 @@ public class CronPreviousTimeFinder {
     /**
      * 주어진 시간 이전의 cron 실행 시간을 찾습니다.
      */
-    public Date getPreviousValidTime(Date beforeTime) {
+    public Date getPreviousValidTimeBefore(Date time) {
         Calendar cal = Calendar.getInstance();
-        cal.setTime(beforeTime);
+        cal.setTime(time);
         
         // 1초 전부터 시작 (현재 시간 제외)
         cal.add(Calendar.SECOND, -1);
@@ -55,7 +55,7 @@ public class CronPreviousTimeFinder {
             // 너무 많은 반복을 방지 (최대 1시간 = 3600초)
             if (iterations > 3600) {
                 // 더 큰 단위로 점프해서 찾기
-                return findWithLargerSteps(beforeTime);
+                return findWithLargerSteps(time);
             }
         }
         
@@ -234,8 +234,5 @@ public class CronPreviousTimeFinder {
         }
         return range;
     }
-    
-    public String getCronExpression() {
-        return cronExpression;
-    }
+
 }

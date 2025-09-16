@@ -8,27 +8,99 @@ import java.util.Date;
 
 public class CronCalculator {
     private final CronExpression cron;
-
+    private final CronPreviousTimeFinder finder;
+    private final Date[] timeSet = new Date[3];
+    private Date reference;
 
     public CronCalculator(String cron) throws ParseException {
-        this.cron = new CronExpression(cron);
+        this(cron, new Date());
     }
 
-    public CronCalculator(String cron, LocalDateTime now) throws ParseException {
+    public CronCalculator(String cron, Date reference) throws ParseException {
         this.cron = new CronExpression(cron);
+        this.finder = new CronPreviousTimeFinder(cron);
+        setReference(reference);
     }
 
     public String getCron() {
         return this.cron.toString();
     }
 
-    public Date getPreviousFireTime() {
-        return null;
+    public Date getReference() {
+        return this.reference;
     }
 
+    public void setReference(Date reference) {
+        if (this.reference == null) {
+            synchronized (this.timeSet) {
+                this.timeSet[0] = this.finder.getPreviousValidTimeBefore(reference);
+                this.timeSet[1] = this.cron.getNextValidTimeAfter(reference);
+                this.timeSet[2] = this.cron.getNextValidTimeAfter(this.timeSet[1]);
+                this.reference = reference;
+            }
+            return;
+        }
+        if (this.reference.equals(reference)) {
+            return;
+        }
+
+        synchronized (this.timeSet) {
+            try {
+                Date time = this.cron.getNextValidTimeAfter(reference);
+                if (time.equals(this.timeSet[1])) {
+                    return;
+                }
+
+                if (this.reference.before(reference)) { // future
+                    if (time.equals(this.timeSet[2])) {
+                        this.timeSet[0] = this.timeSet[1];
+                        this.timeSet[1] = this.timeSet[2];
+                        this.timeSet[2] = this.cron.getNextValidTimeAfter(time);
+                        return;
+                    }
+                    if (time.after(this.timeSet[2])) {
+                        this.timeSet[0] = this.finder.getPreviousValidTimeBefore(time);
+                        this.timeSet[1] = time;
+                        this.timeSet[2] = this.cron.getNextValidTimeAfter(time);
+                        return;
+                    }
+                }
+
+                if (this.reference.after(reference)) {
+                    if (time.equals(this.timeSet[0])) {
+                        this.timeSet[2] = this.timeSet[1];
+                        this.timeSet[1] = this.timeSet[0];
+                        this.timeSet[0] = this.finder.getPreviousValidTimeBefore(time);
+                        return;
+                    }
+                    if (time.before(this.timeSet[0])) {
+                        this.timeSet[2] = this.cron.getNextValidTimeAfter(time);
+                        this.timeSet[1] = time;
+                        this.timeSet[0] = this.finder.getPreviousValidTimeBefore(time);
+                        return;
+                    }
+                }
+            } finally {
+                this.reference = reference;
+            }
+        }
+    }
+
+    public void setReference(LocalDateTime reference) {
+        setReference(Date.from(reference.atZone(java.time.ZoneId.systemDefault()).toInstant()));
+    }
+
+    public Date getPreviousFireTime() {
+        return this.timeSet[0] != null ? this.timeSet[0] : this.finder.getPreviousValidTimeBefore(this.reference);
+    }
+
+    public Date getFireTime() {
+        return this.timeSet[1] != null ? this.timeSet[1] : this.cron.getNextValidTimeAfter(this.reference);
+    }
+
+
     public Date getNextFireTime() {
-//        this.cron.getFinalFireTime()
-        return null;
+        return this.timeSet[2] != null ? this.timeSet[2] : this.cron.getNextValidTimeAfter(this.cron.getNextValidTimeAfter(this.reference));
     }
 
 

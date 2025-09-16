@@ -1,12 +1,12 @@
 package org.sw.logback;
 
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.rolling.*;
-
+import ch.qos.logback.core.rolling.RollingPolicyBase;
+import ch.qos.logback.core.rolling.RolloverFailure;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
 import org.quartz.CronExpression;
-import org.quartz.impl.calendar.CronCalendar;
 import org.sw.logback.cron.CronCalculator;
-import org.sw.logback.cron.CronUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,12 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -50,19 +48,19 @@ public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> 
         setTimeBasedFileNamingAndTriggeringPolicy(this.fileNamingTriggeringPolicy);
 
         Date now = new Date(this.fileNamingTriggeringPolicy.getCurrentTime());
-        this.previousDate = CronUtil.previous(this.cronExpressionStr, now);
+//        this.previousDate = CronUtil.previous(this.cronExpressionStr, now);
         this.nextDate = this.cronExpression.getNextValidTimeAfter(now);
 
         super.start();
         // 파일 이름이 기존 로거의 규칙에 맞게 생성되도록 이전 스케줄 시간을 강제로 주입합니다.
         this.fileNamingTriggeringPolicy.setDateInCurrentPeriod(this.previousDate.getTime());
 
-        this.calculator;
-        this.scheduler.schedule().scheduleAtFixedRate(() -> {
-            if (getTimeBasedFileNamingAndTriggeringPolicy().isTriggeringEvent(null, null)) {
-                createFileIfNotExists(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
-            }
-        }, 0, 5, TimeUnit.SECONDS);
+//        this.calculator;
+//        this.scheduler.schedule().scheduleAtFixedRate(() -> {
+//            if (getTimeBasedFileNamingAndTriggeringPolicy().isTriggeringEvent(null, null)) {
+//                createFileIfNotExists(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
+//            }
+//        }, 0, 5, TimeUnit.SECONDS);
     }
 
     private void schedule(){

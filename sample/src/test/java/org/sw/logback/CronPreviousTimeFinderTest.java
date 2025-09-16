@@ -26,7 +26,7 @@ class CronPreviousTimeFinderTest {
         
         CronPreviousTimeFinder finder = new CronPreviousTimeFinder(cronExpr);
         Date currentTime = sdf.parse(currentTimeStr);
-        Date previousTime = finder.getPreviousValidTime(currentTime);
+        Date previousTime = finder.getPreviousValidTimeBefore(currentTime);
         
         long endTime = System.nanoTime();
         double durationMs = (endTime - startTime) / 1_000_000.0;
@@ -135,7 +135,7 @@ class CronPreviousTimeFinderTest {
             
             CronPreviousTimeFinder finder = new CronPreviousTimeFinder(cronExpr);
             Date currentTime = sdf.parse(timeStr);
-            Date previousTime = finder.getPreviousValidTime(currentTime);
+            Date previousTime = finder.getPreviousValidTimeBefore(currentTime);
             
             long endTime = System.nanoTime();
             double durationMs = (endTime - startTime) / 1_000_000.0;
