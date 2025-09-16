@@ -1,6 +1,5 @@
-package org.sw.logback;
+package org.sw.logback.cron;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 public class CronUtil {

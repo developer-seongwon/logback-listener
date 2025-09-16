@@ -1,7 +1,6 @@
-package org.sw.logback;
+package org.sw.logback.cron;
 
 import java.util.*;
-import java.text.ParseException;
 
 public class CronPreviousTimeFinder {
     

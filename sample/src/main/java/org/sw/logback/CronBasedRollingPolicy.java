@@ -3,9 +3,10 @@ package org.sw.logback;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.rolling.*;
 
-import ch.qos.logback.core.rolling.helper.Compressor;
-import ch.qos.logback.core.rolling.helper.FileNamePattern;
 import org.quartz.CronExpression;
+import org.quartz.impl.calendar.CronCalendar;
+import org.sw.logback.cron.CronCalculator;
+import org.sw.logback.cron.CronUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,18 +14,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> {
-    private ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ExecutorService worker = Executors.newCachedThreadPool();
+    private CronCalculator calculator;
     protected String cronExpressionStr = "0 0 0 * * ?";
     protected CronExpression cronExpression;
     protected Date previousDate;
@@ -36,16 +36,19 @@ public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> 
 
     @Override
     public void start() {
+        if (this.calculator == null) {
+            try {
+                this.calculator = new CronCalculator("0 0 0 * * ?");
+            } catch (Exception ignore) {
+
+            }
+        }
+        addInfo(String.format("Will use the pattern '%s' for the active file", this.calculator.getCron()));
+
         this.fileNamingTriggeringPolicy = new DefaultCronBasedFileNamingAndTriggeringPolicy<>();
         // using a wrapper object
         setTimeBasedFileNamingAndTriggeringPolicy(this.fileNamingTriggeringPolicy);
 
-        try {
-            this.cronExpression = new CronExpression(this.cronExpressionStr);
-        } catch (ParseException cause) {
-            addError("Invalid Cron Expression: " + cause);
-            return;
-        }
         Date now = new Date(this.fileNamingTriggeringPolicy.getCurrentTime());
         this.previousDate = CronUtil.previous(this.cronExpressionStr, now);
         this.nextDate = this.cronExpression.getNextValidTimeAfter(now);
@@ -54,43 +57,16 @@ public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> 
         // 파일 이름이 기존 로거의 규칙에 맞게 생성되도록 이전 스케줄 시간을 강제로 주입합니다.
         this.fileNamingTriggeringPolicy.setDateInCurrentPeriod(this.previousDate.getTime());
 
-        this.service.scheduleAtFixedRate(() -> {
+        this.calculator;
+        this.scheduler.schedule().scheduleAtFixedRate(() -> {
             if (getTimeBasedFileNamingAndTriggeringPolicy().isTriggeringEvent(null, null)) {
                 createFileIfNotExists(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
             }
-//            이전이름 == getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix();
-//            try {
-//                isTriggeringEvent(null, null))
-//
-//            }catch(Exception cause){
-//                cause.printStackTrace();
-//            }
-//            다음이름
-//
-//                    if(이전이름.equals(다음이름)){
-//                        // ds
-//                    }
-//
-//
-//            FileNamePattern pattern = new FileNamePattern(fileNamePatternStr, this.context);
-//            List<String> logs = new ArrayList<>();
-//            logs.add("CronBasedRollingPolicy.start: ");
-//            logs.add(getString(getFileNamePattern()));
-//            logs.add(getString(getActiveFileName()));
-//            logs.add(getString(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix()));
-////            logs.add(getString(getTimeBasedFileNamingAndTriggeringPolicy().getElapsedPeriodsFileName()));
-//            logs.add(getString(getFileNamePattern()));
-//
-//                System.out.println(String.join(", ", logs.toArray(new String[0])));
-
         }, 0, 5, TimeUnit.SECONDS);
-//        System.out.println(getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix());
-//
-//        if(this.previousFileName == null){
-//            this.previousFileName = getTimeBasedFileNamingAndTriggeringPolicy().getCurrentPeriodsFileNameWithoutCompressionSuffix();
-//        }else{
-//
-//        }
+    }
+
+    private void schedule(){
+
     }
 
     @Override
@@ -158,12 +134,8 @@ public class CronBasedRollingPolicy<E> extends SizeAndTimeBasedRollingPolicy<E> 
      *             the cron expression specifying the desired schedule for this rolling policy
      *             (e.g., "0 0 12 * * ?" for daily at noon)
      */
-    public void setCron(String cron) {
-        if (CronExpression.isValidExpression(cron)) {
-            this.cronExpressionStr = cron;
-        } else {
-
-        }
+    public void setCron(String cron) throws ParseException {
+        this.calculator = new CronCalculator(cron);
     }
 
     /**

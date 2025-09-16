@@ -3,6 +3,8 @@ package org.sw.logback;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.sw.logback.cron.CronPreviousTimeFinder;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.text.ParseException;
