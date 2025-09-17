@@ -18,11 +18,11 @@
         <rollingPolicy class="org.sw.logback.CronBasedRollingPolicy">
 <!--        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
 <!--            <fileNamePattern>./logs/application.%d{yyyyMMddHHmm}.log</fileNamePattern>-->
-            <fileNamePattern>./logs/%d{yyyyMMdd}/%d{dd}.%i</fileNamePattern>
-            <cron>0 */5 * * * ?</cron>
-            <maxFileSize>1KB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>./logs/%d{yyyyMMdd}/%d{HHmm}.log</fileNamePattern>
+            <cron>0 */1 * * * ?</cron>
+<!--            <maxFileSize>1KB</maxFileSize>-->
+<!--            <maxHistory>30</maxHistory>-->
+<!--            <totalSizeCap>10GB</totalSizeCap>-->
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>

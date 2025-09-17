@@ -7,11 +7,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 
 @RestController
 @RequestMapping("/log")
 @SpringBootApplication
 public class SampleApplication {
+
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public static void main(String[] args) {
         SpringApplication.run(SampleApplication.class, args);
@@ -19,6 +27,8 @@ public class SampleApplication {
 
     @GetMapping("/")
     public void logging() {
-        LoggerFactory.getLogger(SampleApplication.class).info("INFO 레벨 로그입니다.");
+        this.scheduler.scheduleAtFixedRate(() -> {
+            LoggerFactory.getLogger(SampleApplication.class).info("INFO - " + LocalDateTime.now());
+        },0, 5, TimeUnit.SECONDS);
     }
 }
