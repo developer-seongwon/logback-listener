@@ -1,34 +1,23 @@
 package org.sw.logback;
 
 import ch.qos.logback.core.rolling.DefaultTimeBasedFileNamingAndTriggeringPolicy;
-import ch.qos.logback.core.rolling.helper.FileNamePattern;
 
 import java.io.File;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.Date;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
-public class DefaultCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultTimeBasedFileNamingAndTriggeringPolicy<E> {
+public class DefaultCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultTimeBasedFileNamingAndTriggeringPolicy<E> implements CronBasedFileNamingAndTriggeringPolicy<E> {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
-    private final Instant instant = Instant.now();
-    private final AtomicLong atomicNextCheck = new AtomicLong(instant.toEpochMilli());
-    private FileNamePattern fileNamePattern;
-    private CronBasedRollingPolicy<E> rollingPolicy;
+    CronBasedRollingPolicy<E> cbrp;
 
     @Override
     public void start() {
-        this.fileNamePattern = new FileNamePattern(this.rollingPolicy.getFileNamePattern(), this.context);
-
         super.start();
-        this.atomicNextCheck.set(this.rollingPolicy.calculator.getFireTime().getTime());
-        this.worker.execute(this::validParentDirectory);
+        setDateInCurrentPeriod(this.cbrp.calculator.getPreviousFireTime().getTime());
+        validParentDirectory();
     }
 
     public void validParentDirectory() {
@@ -37,25 +26,23 @@ public class DefaultCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultTim
             if (parent.mkdirs()) {
                 addInfo("create parent directory: " + parent.getAbsolutePath());
             }
-            this.scheduler.schedule(this::validParentDirectory, (this.atomicNextCheck.get() - getCurrentTime()), TimeUnit.MILLISECONDS);
         }
+        if (this.scheduler.isShutdown() || this.scheduler.isTerminated()) {
+            return;
+        }
+        this.scheduler.schedule(this::validParentDirectory, (this.atomicNextCheck.get() - getCurrentTime()), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void stop() {
         super.stop();
-
         this.scheduler.shutdown();
-        this.worker.shutdown();
     }
 
-    public void setCronBasedRollingPolicy(CronBasedRollingPolicy<E> rollingPolicy) {
-        this.rollingPolicy = rollingPolicy;
+    public void setCronBasedRollingPolicy(CronBasedRollingPolicy<E> cbrp) {
+        this.cbrp = cbrp;
     }
 
-    /**
-     * fileNamePattern에 의해 생성되는 파일 경로에 대한 문자열을 제공
-     */
     @Override
     public String getCurrentPeriodsFileNameWithoutCompressionSuffix() {
         return super.getCurrentPeriodsFileNameWithoutCompressionSuffix();
@@ -63,16 +50,17 @@ public class DefaultCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultTim
 
     @Override
     protected long computeNextCheck(long timestamp) {
-        return this.rollingPolicy.calculator.getNextFireTime().getTime();
+        this.cbrp.calculator.setReference(new Date(timestamp));
+        return this.cbrp.calculator.getFireTime().getTime();
     }
 
     @Override
     public boolean isTriggeringEvent(File activeFile, E event) {
-        System.out.println("Old - " + this.elapsedPeriodsFileName);
+        //
         if (super.isTriggeringEvent(activeFile, event)) {
-            System.out.println("New - " + this.elapsedPeriodsFileName);
-            this.rollingPolicy.calculator.setReference(new Date(dateInCurrentPeriod.toEpochMilli()));
-            setDateInCurrentPeriod(this.rollingPolicy.calculator.getPreviousFireTime().getTime());
+            // DefaultTimeBasedFileNamingAndTriggeringPolicy.isTriggeringEvent에서 dateInCurrentPeriod 값을 '현재 시간'으로 변경합니다.
+            // 다음번 isTriggeringEvent가 true일 때, 이전에 변경된 dateInCurrentPeriod 값으로 파일을 생성하기 때문에 크론식에 맞는 파일명 생성을 위해서 재차 변경합니다.
+            setDateInCurrentPeriod(this.cbrp.calculator.getPreviousFireTime().getTime());
             return true;
         }
         return false;

@@ -60,7 +60,6 @@
     <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
-<!--        <appender-ref ref="ERROR"/>-->
     </root>
 
     <!-- 특정 패키지 로그 레벨 설정 -->

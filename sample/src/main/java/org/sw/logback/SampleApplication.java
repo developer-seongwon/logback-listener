@@ -29,6 +29,6 @@ public class SampleApplication {
     public void logging() {
         this.scheduler.scheduleAtFixedRate(() -> {
             LoggerFactory.getLogger(SampleApplication.class).info("INFO - " + LocalDateTime.now());
-        },0, 5, TimeUnit.SECONDS);
+        },0, 1, TimeUnit.MILLISECONDS);
     }
 }
