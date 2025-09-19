@@ -1,17 +1,11 @@
 package org.sw.logback;
 
-import ch.qos.logback.core.Context;
 import ch.qos.logback.core.CoreConstants;
 import ch.qos.logback.core.joran.spi.NoAutoStart;
 import ch.qos.logback.core.rolling.LengthCounter;
 import ch.qos.logback.core.rolling.LengthCounterBase;
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
-import ch.qos.logback.core.rolling.helper.ArchiveRemover;
-import ch.qos.logback.core.rolling.helper.SizeAndTimeBasedArchiveRemover;
-import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.util.FileSize;
 
-import java.io.File;
 import java.time.Duration;
 
 import static ch.qos.logback.core.CoreConstants.MANUAL_URL_PREFIX;
@@ -67,16 +61,16 @@ public class SizeAndCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultCro
             return;
         }
 
-        archiveRemover = createArchiveRemover();
-        archiveRemover.setContext(context);
+//        archiveRemover = createArchiveRemover();
+//        archiveRemover.setContext(context);
 
         // we need to get the correct value of currentPeriodsCounter.
         // usually the value is 0, unless the appender or the application
         // is stopped and restarted within the same period
         String regex = cbrp.fileNamePattern.toRegexForFixedDate(dateInCurrentPeriod);
-        String stemRegex = FileFilterUtil.afterLastSlash(regex);
-
-        computeCurrentPeriodsHighestCounterValue(stemRegex);
+//        String stemRegex = FileFilterUtil.afterLastSlash(regex);
+//
+//        computeCurrentPeriodsHighestCounterValue(stemRegex);
 
         if (isErrorFree()) {
             started = true;
@@ -98,9 +92,9 @@ public class SizeAndCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultCro
         return !inError;
     }
 
-    protected ArchiveRemover createArchiveRemover() {
-        return new SizeAndTimeBasedArchiveRemover(tbrp.fileNamePattern, rc);
-    }
+//    protected ArchiveRemover createArchiveRemover() {
+//        return new SizeAndTimeBasedArchiveRemover(tbrp.fileNamePattern, rc);
+//    }
 
     //
 //    void computeCurrentPeriodsHighestCounterValue(final String stemRegex) {
