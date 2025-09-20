@@ -15,7 +15,7 @@ public class CronRollingCalendar extends RollingCalendar {
 
     private CronRollingCalendar(CronExpression cron, Date reference, TimeZone timeZone, Locale locale, String pattern) {
         super(pattern, timeZone, locale);
-        this.finder = new CronTimeFinder(cron, reference);
+        this.finder = new CronTimeFinder(cron, reference, 5);
     }
 
     @Override
@@ -25,13 +25,11 @@ public class CronRollingCalendar extends RollingCalendar {
 
     @Override
     public Instant getNextTriggeringDate(Instant instant) {
-        return getEndOfNextNthPeriod(instant, 1);
+        return this.finder.getNextValidTimeAfter(Date.from(instant)).toInstant();
     }
 
     public Instant getEndOfNextNthPeriod(Instant instant, int periods) {
-        return periods > 0 ?
-                this.finder.getNextValidTimeAfter(Date.from(instant), periods) :
-                this.finder.getPreviousValidTimeBefore(Date.from(instant), periods);
+        return this.finder.getEndOfNextNthPeriod(Date.from(instant), periods).toInstant();
     }
 
     /**

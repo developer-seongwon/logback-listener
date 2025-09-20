@@ -2,7 +2,7 @@ package org.sw.logback;
 
 import ch.qos.logback.core.util.FileSize;
 
-import static org.sw.logback.SizeAndCronBasedFileNamingAndTriggeringPolicy.Usage;
+import static org.sw.logback.SizeAndCronBasedFileNamingAndTriggeringPolicyBase.Usage;
 
 public class SizeAndCronBasedRollingPolicy<E> extends CronBasedRollingPolicy<E> {
 
@@ -10,7 +10,7 @@ public class SizeAndCronBasedRollingPolicy<E> extends CronBasedRollingPolicy<E> 
 
     @Override
     public void start() {
-        SizeAndCronBasedFileNamingAndTriggeringPolicy<E> sizeAndCronBasedFNATP = new SizeAndCronBasedFileNamingAndTriggeringPolicy<E>(Usage.EMBEDDED);
+        SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E> sizeAndCronBasedFNATP = new SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E>(Usage.EMBEDDED);
         if (maxFileSize == null) {
             addError("maxFileSize property is mandatory.");
             return;

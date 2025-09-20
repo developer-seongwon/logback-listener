@@ -11,7 +11,7 @@ import java.time.Duration;
 import static ch.qos.logback.core.CoreConstants.MANUAL_URL_PREFIX;
 
 @NoAutoStart
-public class SizeAndCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultCronBasedFileNamingAndTriggeringPolicy<E> {
+public class SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E> extends CronBasedFileNamingAndTriggeringPolicyBase<E> {
 
     enum Usage {
         EMBEDDED, DIRECT
@@ -29,11 +29,11 @@ public class SizeAndCronBasedFileNamingAndTriggeringPolicy<E> extends DefaultCro
     private final Usage usage;
     public LengthCounter lengthCounter = new LengthCounterBase();
 
-    public SizeAndCronBasedFileNamingAndTriggeringPolicy() {
+    public SizeAndCronBasedFileNamingAndTriggeringPolicyBase() {
         this(Usage.DIRECT);
     }
 
-    public SizeAndCronBasedFileNamingAndTriggeringPolicy(Usage usage) {
+    public SizeAndCronBasedFileNamingAndTriggeringPolicyBase(Usage usage) {
         this.usage = usage;
     }
 

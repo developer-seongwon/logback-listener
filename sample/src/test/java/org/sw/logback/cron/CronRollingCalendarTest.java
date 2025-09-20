@@ -2,6 +2,7 @@ package org.sw.logback.cron;
 
 
 import ch.qos.logback.core.rolling.helper.RollingCalendar;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +14,7 @@ import org.sw.logback.CronRollingCalendar;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,14 +35,14 @@ public class CronRollingCalendarTest {
     }
 
     @ParameterizedTest
-    @DisplayName("롤링 비교 테스트")
+    @DisplayName("롤링 비교 테스트(getNextTriggeringDate)")
     @CsvSource({
             "'0 * * * * ?', 'yyyyMMddHHmm', '분 단위 로그 파일'",
             "'0 0 * * * ?', 'yyyyMMddHH', '시 단위 로그 파일'",
             "'0 0 0 * * ?', 'yyyyMMdd', '일 단위 로그 파일'",
             "'0 0 0 1 * ?', 'yyyyMM', '월 단위 로그 파일'"
     })
-    void testBaseRollingPatterns(String cronPattern, String datePattern, String desc) {
+    void getNextTriggeringDate(String cronPattern, String datePattern, String desc) {
         logger.info("[{}][{}][{}] 테스트 시작", cronPattern, datePattern, desc);
 
         Date date = Date.from(reference.atZone(ZoneOffset.systemDefault()).toInstant());
@@ -61,27 +63,56 @@ public class CronRollingCalendarTest {
     }
 
     @ParameterizedTest
-    @DisplayName("N번 비교 테스트")
+    @DisplayName("롤링 비교 테스트(periodBarriersCrossed)")
     @CsvSource({
-            "'0 * * * * ?', 'yyyyMMddHHmm', '분 단위 로그 파일'",
-            "'0 0 * * * ?', 'yyyyMMddHH', '시 단위 로그 파일'",
-            "'0 0 0 * * ?', 'yyyyMMdd', '일 단위 로그 파일'",
-            "'0 0 0 1 * ?', 'yyyyMM', '월 단위 로그 파일'"
+            "'0 * * * * ?', 'yyyyMMddHHmm', '분 단위 로그 파일'"
+            , "'0 0 * * * ?', 'yyyyMMddHH', '시 단위 로그 파일'"
+            , "'0 0 0 * * ?', 'yyyyMMdd', '일 단위 로그 파일'"
     })
-    void testJumpRollingPatterns(String cronPattern, String datePattern, String desc) {
+    void periodBarriersCrossed(String cronPattern, String datePattern, String desc) {
+        Date from = Date.from(reference.atZone(ZoneOffset.systemDefault()).toInstant());
+        Date to = Date.from(reference.plusDays(15).atZone(ZoneOffset.systemDefault()).toInstant());
+
+        logger.info("[{}][{}][{}] 테스트 시작: {} - {}", cronPattern, datePattern, desc, from, to);
+        CronRollingCalendar cc = CronRollingCalendar.newBuilder()
+                .setReference(from)
+                .setCronPattern(cronPattern)
+                .setDatePattern(datePattern)
+                .build();
+
+        RollingCalendar rc = new RollingCalendar(datePattern);
+
+        assertEquals(String.valueOf(cc.periodBarriersCrossed(from.getTime(), to.getTime())), String.valueOf(rc.periodBarriersCrossed(from.getTime(), to.getTime())));
+    }
+
+
+    @ParameterizedTest
+    @DisplayName("N번 비교 테스트(getEndOfNextNthPeriod)")
+    @CsvSource({
+            "'0 * * * * ?', 'yyyyMMddHHmm', '분 단위 로그 파일'"
+            , "'0 0 * * * ?', 'yyyyMMddHH', '시 단위 로그 파일'"
+            , "'0 0 0 * * ?', 'yyyyMMdd', '일 단위 로그 파일'"
+            , "'0 0 0 1 * ?', 'yyyyMM', '월 단위 로그 파일'"
+    })
+    void getEndOfNextNthPeriod(String cronPattern, String datePattern, String desc) {
         logger.info("[{}][{}][{}] 테스트 시작", cronPattern, datePattern, desc);
 
         Date date = Date.from(reference.atZone(ZoneOffset.systemDefault()).toInstant());
 
+        CronRollingCalendar cc = CronRollingCalendar.newBuilder()
+                .setReference(date)
+                .setCronPattern(cronPattern)
+                .setDatePattern(datePattern)
+                .build();
         RollingCalendar rc = new RollingCalendar(datePattern);
-        logger.info("[{}][{}][{}] -2회 - {}", cronPattern, datePattern, desc, rc.getEndOfNextNthPeriod(date.toInstant(), -2));
-        logger.info("[{}][{}][{}] -1회 - {}", cronPattern, datePattern, desc, rc.getEndOfNextNthPeriod(date.toInstant(), -1));
-        logger.info("[{}][{}][{}] +0회 - {}", cronPattern, datePattern, desc, rc.getEndOfNextNthPeriod(date.toInstant(), 0));
-        logger.info("[{}][{}][{}] +1회 - {}", cronPattern, datePattern, desc, rc.getEndOfNextNthPeriod(date.toInstant(), 1));
-        logger.info("[{}][{}][{}] +2회 - {}", cronPattern, datePattern, desc, rc.getEndOfNextNthPeriod(date.toInstant(), 2));
 
-
+        for (Integer period : List.of(-10, -5, 0, 5, 10)) {
+            Instant ccInstant = cc.getEndOfNextNthPeriod(date.toInstant(), period);
+            Instant rcInstant = rc.getEndOfNextNthPeriod(date.toInstant(), period);
+            assertEquals(ccInstant, rcInstant);
+        }
     }
+
 
     public LocalDateTime toLocalDateTime(Instant instant) {
         return LocalDateTime.ofInstant(instant, ZoneOffset.systemDefault());

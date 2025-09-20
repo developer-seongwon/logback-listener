@@ -1,42 +1,36 @@
 package org.sw.logback;
 
+import ch.qos.logback.core.rolling.DefaultTimeBasedFileNamingAndTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.helper.FileNamePattern;
-import org.sw.logback.cron.CronCalculator;
 
 import java.text.ParseException;
 
 public class CronBasedRollingPolicy<E> extends TimeBasedRollingPolicy<E> {
+    CronBasedFileNamingAndTriggeringPolicyBase<E> cronBasedFileNamingAndTriggeringPolicy;
     FileNamePattern fileNamePattern;
-    CronCalculator calculator;
-    CronBasedFileNamingAndTriggeringPolicy<E> cronBasedFileNamingAndTriggeringPolicy;
+    private String cron;
+
 
     @Override
     public void start() {
-        try {
-            if (this.calculator == null) {
-                this.calculator = new CronCalculator("0 0 0 * * ?");
-            }
-            addInfo(String.format("Will use the pattern '%s' for the active file", this.calculator.getCron()));
-
-            this.cronBasedFileNamingAndTriggeringPolicy = new DefaultCronBasedFileNamingAndTriggeringPolicy<>();
+        this.fileNamePattern = new FileNamePattern(getFileNamePattern(), super.context);
+        // SizeAnd~ 클래스에서 직접 넣어주기 때문에 충돌 방지를 위해서 null을 확인한 이후에 추가합니다.
+        if (getTimeBasedFileNamingAndTriggeringPolicy() == null) {
+            this.cronBasedFileNamingAndTriggeringPolicy = new CronBasedFileNamingAndTriggeringPolicyBase<>();
             this.cronBasedFileNamingAndTriggeringPolicy.setCronBasedRollingPolicy(this);
-
-            // using a wrapper object
             setTimeBasedFileNamingAndTriggeringPolicy(this.cronBasedFileNamingAndTriggeringPolicy);
-
-            super.start();
-
-            if(getFileNamePattern() != null){
-                fileNamePattern = new FileNamePattern(fileNamePatternStr, this.context);
-            }
-        } catch (Exception ignore) {
-
         }
+
+        super.start();
     }
 
-    public void setCron(String cron) throws ParseException {
-        this.calculator = new CronCalculator(cron);
+    public void setCron(String cron) {
+        this.cron = cron;
+    }
+
+    public String getCron() {
+        return this.cron;
     }
 }
 
