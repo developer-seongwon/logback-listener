@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.Optional;
 
 public class CronTimeFinder {
-    private Logger logger = LoggerFactory.getLogger(CronTimeFinder.class);
+//    private Logger logger = LoggerFactory.getLogger(CronTimeFinder.class);
     private final CronExpression cron;
     private final CronPreviousTimeFinder previousFinder;
     private final Date[] caches;
@@ -60,7 +60,7 @@ public class CronTimeFinder {
      */
     public Date getNextValidTimeAfter(Date date) {
         Date result = this.cron.getNextValidTimeAfter(date);
-        this.logger.info("getNextValidTimeAfter: {} -> {}", date.toString(), result.toString());
+//        this.logger.info("getNextValidTimeAfter: {} -> {}", date.toString(), result.toString());
         return result;
     }
 

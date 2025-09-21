@@ -17,22 +17,17 @@ public class CronBasedFileNamingAndTriggeringPolicyBase<E> extends DefaultTimeBa
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     CronBasedRollingPolicy<E> cbrp;
-    private CronRollingCalendar cc;
 
     @Override
     public void start() {
-        this.cc = CronRollingCalendar.newBuilder()
-                .setCronPattern(this.cbrp.getCron())
-                .build();
-
         super.start();
         if (!this.isStarted()) {
             return;
         }
 
         // ArchiveRemover의 RollingCalendar를 교체하는게 어렵기 때문에 클래스를 통으로 갈아끼웁니다.
-        super.archiveRemover = new TimeBasedArchiveRemover(new FileNamePattern(super.tbrp.getFileNamePattern(), super.context),
-                this.cc
+        super.archiveRemover = new CronBasedArchiveRemover(new FileNamePattern(super.tbrp.getFileNamePattern(), super.context),
+                cbrp.cc
         );
         super.archiveRemover.setContext(super.context);
 
@@ -68,7 +63,7 @@ public class CronBasedFileNamingAndTriggeringPolicyBase<E> extends DefaultTimeBa
 
     @Override
     protected long computeNextCheck(long timestamp) {
-        return cc.getNextTriggeringDate(Instant.ofEpochMilli(timestamp)).toEpochMilli();
+        return cbrp.cc.getNextTriggeringDate(Instant.ofEpochMilli(timestamp)).toEpochMilli();
     }
 
     @Override
@@ -81,7 +76,7 @@ public class CronBasedFileNamingAndTriggeringPolicyBase<E> extends DefaultTimeBa
             // 다음번 isTriggeringEvent가 true일 때, 이전에 변경된 dateInCurrentPeriod 값으로 파일을 생성하기 때문에 크론식에 맞는 파일명 생성을 위해서 재차 변경합니다.
 
             Instant now = Instant.ofEpochMilli(getCurrentTime());
-            setDateInCurrentPeriod(this.cc.getEndOfNextNthPeriod(now, 0).toEpochMilli());
+            setDateInCurrentPeriod(cbrp.cc.getEndOfNextNthPeriod(now, 0).toEpochMilli());
             return true;
         }
         return false;

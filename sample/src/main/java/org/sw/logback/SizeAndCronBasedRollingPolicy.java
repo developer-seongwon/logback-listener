@@ -2,15 +2,13 @@ package org.sw.logback;
 
 import ch.qos.logback.core.util.FileSize;
 
-import static org.sw.logback.SizeAndCronBasedFileNamingAndTriggeringPolicyBase.Usage;
-
 public class SizeAndCronBasedRollingPolicy<E> extends CronBasedRollingPolicy<E> {
 
     FileSize maxFileSize;
 
     @Override
     public void start() {
-        SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E> sizeAndCronBasedFNATP = new SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E>(Usage.EMBEDDED);
+        SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E> sizeAndCronBasedFNATP = new SizeAndCronBasedFileNamingAndTriggeringPolicyBase<E>();
         if (maxFileSize == null) {
             addError("maxFileSize property is mandatory.");
             return;
@@ -19,7 +17,7 @@ public class SizeAndCronBasedRollingPolicy<E> extends CronBasedRollingPolicy<E> 
         }
 
         sizeAndCronBasedFNATP.setMaxFileSize(maxFileSize);
-        cronBasedFileNamingAndTriggeringPolicy = sizeAndCronBasedFNATP;
+        setTimeBasedFileNamingAndTriggeringPolicy(sizeAndCronBasedFNATP);
 
         if (!isUnboundedTotalSizeCap() && totalSizeCap.getSize() < maxFileSize.getSize()) {
             addError("totalSizeCap of [" + totalSizeCap + "] is smaller than maxFileSize [" + maxFileSize
